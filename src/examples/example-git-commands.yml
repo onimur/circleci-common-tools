@@ -7,10 +7,10 @@ usage:
     tools: onimur/common-tools@x.y.z
 
   orb_promotion_filters: &orb_promotion_filters
-  branches:
-    ignore: /.*/
-  tags:
-    only: /.*/ # Trigger for any tags
+    branches:
+      ignore: /.*/
+    tags:
+      only: /.*/ # Trigger for any tags
 
   jobs:
     push-to-git:
