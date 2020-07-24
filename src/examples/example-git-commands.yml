@@ -1,0 +1,35 @@
+description: >
+  Push files or folders to remote Github repository
+usage:
+  version: 2.1
+
+  orbs:
+    tools: onimur/common-tools@x.y.z
+
+  orb_promotion_filters: &orb_promotion_filters
+  branches:
+    ignore: /.*/
+  tags:
+    only: /.*/ # Trigger for any tags
+
+  jobs:
+    push-to-git:
+      machine: true
+      steps:
+        - tools/git-checkout:           # Checkout tag to branch
+            branch: master
+        - run:
+            name: Create a file.
+            command: |
+              mkdir -p second
+              echo "Hello world!" >> hello.txt
+              echo "Hello world, again!" >> second/hello-again.txt
+        - tools/git-config    # Cofnig bot-name and bot-email to push
+        - tools/git-push:     # Push the file or folder to remote repository
+            paths: hello.txt, second
+
+  workflows:
+    prepare-workflows:
+      jobs:
+        - push-to-git:
+            filters: *orb_promotion_filters

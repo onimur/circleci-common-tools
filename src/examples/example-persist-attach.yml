@@ -1,5 +1,5 @@
 description: >
-  Persist file or dir to a folder.
+  Persist file or dir to a folder and attach.
 usage:
   version: 2.1
 
