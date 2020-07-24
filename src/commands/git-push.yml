@@ -47,17 +47,33 @@ steps:
   - run:
       name: Push the <<parameters.paths>> to Github
       command: |
+        git_add() {
+          if [[ -d "$1" ]] ; then
+            # If is folder so all content is add
+            echo "All content from directory $1 has been added."
+            git add ./"$1"/*
+          else
+            if [[ -f "$1" ]] ; then
+              echo "The file $1 has been added."
+              git add ./"$1"
+            else
+              echo "$1 is not valid"
+              exit 1
+            fi
+          fi
+        }
+
         foreach_path () {
           SPLIT_PATHS=","
           if [[ "<<parameters.paths>>" =~ $SPLIT_PATHS ]] ; then
             IFS=$SPLIT_PATHS read -ra EACH_PATH \<<< "<<parameters.paths>>"
             for subpath in "${EACH_PATH[@]}" ; do
               subpath=`echo $subpath | sed 's/ *$//g'`
-              git add ./$subpath
+              git_add "$subpath"
             done
           else
             parameter_path=`echo "<<parameters.paths>>" | sed 's/ *$//g'`
-            git add ./$parameter_path
+            git_add "$parameter_path"
           fi
         }
 
