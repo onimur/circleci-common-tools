@@ -28,7 +28,6 @@ usage:
         - run:
             name: Get the file
             command: |
-              find .
               cat "./persist/hello.txt"
               cat "./persist/second/hello-again.txt"
 
