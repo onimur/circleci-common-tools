@@ -22,7 +22,7 @@ parameters:
       Email to commit
     type: string
   commit-message:
-    default: Auto Update changelog
+    default: Auto Update
     description: Commit message
     type: string
   paths:
@@ -37,7 +37,7 @@ parameters:
   branch:
     default: master
     description: |
-      Branch to push changelog
+      Branch to push the files
     type: string
 
 steps:
