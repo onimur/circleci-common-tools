@@ -45,7 +45,7 @@ steps:
       bot-email: <<parameters.bot-email>>
       bot-name: <<parameters.bot-name>>
   - run:
-      name: Push the <<parameters.output>> to Github
+      name: Push the <<parameters.paths>> to Github
       command: |
         foreach_path () {
           SPLIT_PATHS=","
