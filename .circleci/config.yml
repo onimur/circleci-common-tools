@@ -8,7 +8,7 @@ orbs:
   # add your orb below, to be used in integration tests (note: a
   # @dev:alpha release must exist; if none exists, you'll need to
   # publish manually once before this worklow can succeed)
-  #tools: onimur/common-tools@<<pipeline.parameters.dev-orb-version>>
+  tools: onimur/common-tools@<<pipeline.parameters.dev-orb-version>>
 
 # Pipeline parameters
 parameters:
@@ -33,102 +33,102 @@ commands:
 
 jobs:
   # TESTS HERE
-  # integration-persist-1:
-  #   machine: true
-  #   steps:
-  #     - run:
-  #         name: Create a file.
-  #         command: |
-  #           mkdir -p second
-  #           echo "Hello world!" >> hello.txt
-  #           echo "Hello world, again!" >> second/hello-again.txt
-  #     - tools/persist-dir:
-  #         paths: hello.txt, second
-  # integration-attach-1:
-  #   machine: true
-  #   steps:
-  #     - tools/attach-dir
-  #     - run:
-  #         name: Checks whether the files were created correctly.
-  #         command: |
-  #           find .
-  #           find /tmp/.persist
-  #           if grep "Hello world!" "./persist/hello.txt"; then
-  #             echo "The ./persist/hello.txt contains 'Hello world!'"
-  #           else
-  #             echo "The ./persist/hello.txt not contains 'Hello world!'"
-  #             exit 1
-  #           fi
-  #           if grep "Hello world, again!" "./persist/second/hello-again.txt"; then
-  #             echo "The ./persist/second/hello-again.txt contains 'Hello world, again!'"
-  #           else
-  #             echo "The ./persist/second/hello-again.txt not contains 'Hello world, again!'"
-  #             exit 1
-  #           fi
-  # integration-persist-2:
-  #   machine: true
-  #   steps:
-  #     - run:
-  #         name: Create a file.
-  #         command: |
-  #           # Attempt to overwrite the file I already had in persist to workspace
-  #           echo "I overwrote hello world" >> hello.txt
-  #           echo "Hello world!" >> hello2.txt
-  #     - tools/persist-dir:
-  #         paths: hello.txt
-  #     - tools/persist-dir:
-  #         custom-directory: my-test
-  #         paths: hello2.txt
-  # # Check if files in persist_to_workspace are overwritten.
-  # integration-attach-2:
-  #   machine: true
-  #   steps:
-  #     - tools/attach-dir
-  #     - run:
-  #         name: Check if files in persist_to_workspace are overwritten.
-  #         command: |
-  #           find /tmp/.persist
-  #           # Check if it was overwritten
-  #           if grep "I overwrote hello world" "./persist/hello.txt"; then
-  #             echo "The ./persist/hello.txt was overwritten"
-  #           else
-  #             echo "The ./persist/hello.txt it was not overwritten"
-  #             exit 1
-  #           fi
-  #     - tools/attach-dir:
-  #         destiny: here
-  #         custom-directory: my-test
-  #         paths: hello2.txt
-  #     - run:
-  #         name: Check files
-  #         command: |
-  #           find /tmp/.persist
-  #           if grep "Hello world!" "./here/hello2.txt"; then
-  #             echo "The ./here/hello2.txt contains 'Hello world!'"
-  #           else
-  #             echo "The ./here/hello2.txt not contains 'Hello world!'"
-  #             exit 1
-  #           fi
-  #   # Checks whether existing files are overwritten by what is in persist_to_workspace.
-  # integration-attach-3:
-  #   machine: true
-  #   steps:
-  #     - run: |
-  #         mkdir -p persist
-  #         echo "The persist_to_workspace has overwritten me" >> ./persist/hello.txt
-  #     - tools/attach-dir
-  #     - run:
-  #         name: Checks whether an existing file in working_directory is overwritten by persist_to_workspace
-  #         command: |
-  #           find /tmp/.persist
-  #           # Check if it was overwritten
-  #           if grep "The persist_to_workspace has overwritten me" "./persist/hello.txt"; then
-  #             echo "The ./persist/hello.txt it was not overwritten"
-  #             exit 1
-  #           else
-  #             echo "The ./persist/hello.txt was overwritten by persist_to_workspace"
-  #           fi
-  #           cat "./persist/hello.txt"
+  integration-persist-1:
+    machine: true
+    steps:
+      - run:
+          name: Create a file.
+          command: |
+            mkdir -p second
+            echo "Hello world!" >> hello.txt
+            echo "Hello world, again!" >> second/hello-again.txt
+      - tools/persist-dir:
+          paths: hello.txt, second
+  integration-attach-1:
+    machine: true
+    steps:
+      - tools/attach-dir
+      - run:
+          name: Checks whether the files were created correctly.
+          command: |
+            find .
+            find /tmp/.persist
+            if grep "Hello world!" "./persist/hello.txt"; then
+              echo "The ./persist/hello.txt contains 'Hello world!'"
+            else
+              echo "The ./persist/hello.txt not contains 'Hello world!'"
+              exit 1
+            fi
+            if grep "Hello world, again!" "./persist/second/hello-again.txt"; then
+              echo "The ./persist/second/hello-again.txt contains 'Hello world, again!'"
+            else
+              echo "The ./persist/second/hello-again.txt not contains 'Hello world, again!'"
+              exit 1
+            fi
+  integration-persist-2:
+    machine: true
+    steps:
+      - run:
+          name: Create a file.
+          command: |
+            # Attempt to overwrite the file I already had in persist to workspace
+            echo "I overwrote hello world" >> hello.txt
+            echo "Hello world!" >> hello2.txt
+      - tools/persist-dir:
+          paths: hello.txt
+      - tools/persist-dir:
+          custom-directory: my-test
+          paths: hello2.txt
+  # Check if files in persist_to_workspace are overwritten.
+  integration-attach-2:
+    machine: true
+    steps:
+      - tools/attach-dir
+      - run:
+          name: Check if files in persist_to_workspace are overwritten.
+          command: |
+            find /tmp/.persist
+            # Check if it was overwritten
+            if grep "I overwrote hello world" "./persist/hello.txt"; then
+              echo "The ./persist/hello.txt was overwritten"
+            else
+              echo "The ./persist/hello.txt it was not overwritten"
+              exit 1
+            fi
+      - tools/attach-dir:
+          destiny: here
+          custom-directory: my-test
+          paths: hello2.txt
+      - run:
+          name: Check files
+          command: |
+            find /tmp/.persist
+            if grep "Hello world!" "./here/hello2.txt"; then
+              echo "The ./here/hello2.txt contains 'Hello world!'"
+            else
+              echo "The ./here/hello2.txt not contains 'Hello world!'"
+              exit 1
+            fi
+    # Checks whether existing files are overwritten by what is in persist_to_workspace.
+  integration-attach-3:
+    machine: true
+    steps:
+      - run: |
+          mkdir -p persist
+          echo "The persist_to_workspace has overwritten me" >> ./persist/hello.txt
+      - tools/attach-dir
+      - run:
+          name: Checks whether an existing file in working_directory is overwritten by persist_to_workspace
+          command: |
+            find /tmp/.persist
+            # Check if it was overwritten
+            if grep "The persist_to_workspace has overwritten me" "./persist/hello.txt"; then
+              echo "The ./persist/hello.txt it was not overwritten"
+              exit 1
+            else
+              echo "The ./persist/hello.txt was overwritten by persist_to_workspace"
+            fi
+            cat "./persist/hello.txt"
   #publish on github releases
   publish-github-release:
     docker:
@@ -197,15 +197,15 @@ workflows:
   integration_tests-prod_deploy:
     when: <<pipeline.parameters.run-integration-tests>>
     jobs:
-      # - integration-persist-1
-      # - integration-attach-1:
-      #     requires: [integration-persist-1]
-      # - integration-persist-2:
-      #     requires: [integration-attach-1]
-      # - integration-attach-2:
-      #     requires: [integration-persist-2]
-      # - integration-attach-3:
-      #     requires: [integration-attach-2]
+      - integration-persist-1
+      - integration-attach-1:
+          requires: [integration-persist-1]
+      - integration-persist-2:
+          requires: [integration-attach-1]
+      - integration-attach-2:
+          requires: [integration-persist-2]
+      - integration-attach-3:
+          requires: [integration-attach-2]
       # Actually publish the orb
       # Promote a dev version of an orb to a semantic production release.
       # It assumes the context of a GitHub pull request, and promotion of the orb to a
@@ -223,7 +223,7 @@ workflows:
           context: main-context
           orb-name: onimur/common-tools
           publish-version-tag: true
-          #requires: [integration-attach-3]
+          requires: [integration-attach-3]
           filters:
             branches:
               only: master
