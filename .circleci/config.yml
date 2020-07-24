@@ -145,7 +145,7 @@ jobs:
           command: |
             DATE=$(date +${DATE_FORMAT})
             TAG_WITHOUT_DOT="${CIRCLE_TAG//./}"
-            TITLE="CircleCI Persist Files"
+            TITLE="Circleci Orb Common Tools"
             URL_CHANGELOG="https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/blob/master/${OUTPUT_CHANGELOG}#${TAG_WITHOUT_DOT}-${DATE}"
             printf -v BODY "$(<./docs/RELEASE_TEMPLATE.md)" \
             "${TITLE}" "${DATE}" "${CIRCLE_TAG}" "${CIRCLE_BUILD_NUM}" "${CIRCLE_BUILD_URL}" "${OUTPUT_CHANGELOG}" "${URL_CHANGELOG}"
