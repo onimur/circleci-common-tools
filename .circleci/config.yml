@@ -96,7 +96,7 @@ jobs:
               exit 1
             fi
       - tools/attach-dir:
-          destiny: here
+          destination: here
           custom-directory: my-test
           paths: hello2.txt
       - run:
