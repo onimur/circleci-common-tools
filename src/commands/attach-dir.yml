@@ -1,0 +1,62 @@
+description: |
+  Get the parameters in /tmp/.persist/custom-directory.
+parameters:
+  custom-directory:
+    description: |
+      The name of the directory that was created to store your files or folders. If custom-directory was passed in the persist-to-dir command, then it is necessary to pass the same dir in the custom-directory.
+    type: string
+    default: persist
+  paths:
+    default: ""
+    description: |
+      The path to files or directories you want to restore. If it is empty, any files or directories that have been persisted will be recovered.
+    type: string
+  destination:
+    default: ""
+    description: |
+      The destination that wants to restore the files or directories. E.g. ./my-persist-files. If empty, files or directories will be restored to your Working Directory, in the persist folder.
+    type: string
+
+steps:
+  - attach_workspace:
+      at: /tmp/.persist
+  - run:
+      name: Restore <<parameters.paths>> to your <<parameters.destination>>.
+      command: |
+        ONIMUR_MAIN_PATH="/tmp/.persist/<<parameters.custom-directory>>"
+        ONIMUR_WORKING_DIRECTORY="${CIRCLE_WORKING_DIRECTORY/#\~/$HOME}"
+
+        foreach_path () {
+          if [[ "<<parameters.paths>>" =~ $SPLIT_PATHS ]] ; then
+            IFS=$SPLIT_PATHS read -ra EACH_PATH \<<< "<<parameters.paths>>"
+            for subpath in "${EACH_PATH[@]}" ; do
+              subpath=`echo $subpath | sed 's/ *$//g'`
+              cp -r -v "$ONIMUR_MAIN_PATH/$subpath" "$1"/
+            done
+          else
+            parameter_path=`echo "<<parameters.paths>>" | sed 's/ *$//g'`
+            cp -r -v "$ONIMUR_MAIN_PATH/$parameter_path" "$1"/
+          fi
+        }
+
+        # Copy each file or dir
+        if [[ -n "<<parameters.paths>>" ]] ; then
+          SPLIT_PATHS=","
+          # Copy each file to <<parameters.custom-directory>>
+          if [[ -n "<<parameters.destination>>" ]] ; then
+            mkdir -p "<<parameters.destination>>"
+            foreach_path "<<parameters.destination>>"
+          # Copy the files to ${ONIMUR_WORKING_DIRECTORY}/<<parameters.custom-directory>>
+          else
+            mkdir -p "$ONIMUR_WORKING_DIRECTORY"/<<parameters.custom-directory>>
+            foreach_path "$ONIMUR_WORKING_DIRECTORY"/<<parameters.custom-directory>>
+          fi
+        else
+          if [[ -n "<<parameters.destination>>" ]] ; then
+            mkdir -p "<<parameters.destination>>"
+            cp -r -v "$ONIMUR_MAIN_PATH/*" "<<parameters.destination>>"/
+          # Move all to /home/${CIRCLE_USERNAME}/project/persist
+          else
+            cp -r -v "$ONIMUR_MAIN_PATH" "$ONIMUR_WORKING_DIRECTORY"
+          fi
+        fi

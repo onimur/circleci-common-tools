@@ -1,0 +1,40 @@
+description: >
+  Persist file or dir to a folder.
+usage:
+  version: 2.1
+
+  orbs:
+    tools: onimur/common-tools@x.y.z
+
+  jobs:
+    prepare:
+      machine: true
+      steps:
+        - run:
+            name: Create a file.
+            command: |
+              mkdir -p second
+              echo "Hello world!" >> hello.txt
+              echo "Hello world, again!" >> second/hello-again.txt
+        # pass the file or folder
+        - tools/persist-dir:
+            paths: hello.txt, second
+
+    recover-files:
+      machine: true
+      steps:
+        # recover file or folder
+        - tools/attach-dir
+        - run:
+            name: Get the file
+            command: |
+              find .
+              cat "./persist/hello.txt"
+              cat "./persist/second/hello-again.txt"
+
+  workflows:
+    prepare-workflows:
+      jobs:
+        - prepare
+        - recover-files:
+            requires: [prepare]

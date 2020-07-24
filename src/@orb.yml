@@ -1,0 +1,15 @@
+version: 2.1
+
+description: >
+  Collection of tools to help create commands, jobs and workflows.
+
+  Check the repository above for more details. Feel free to send any questions, suggestions or contributions to this orb.
+
+  Tools:
+
+  persist-dir and attach-dir: Facilitates interaction with the persist_to_workspace and attach_workspace commands.
+
+  git-config, git-checkout and git-push: Tools that help interact with git commands.
+display:
+  home_url: "https://github.com/onimur/circleci-common-tools"
+  source_url: "https://github.com/onimur/circleci-common-tools"

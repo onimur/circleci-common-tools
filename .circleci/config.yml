@@ -1,0 +1,276 @@
+version: 2.1
+
+orbs:
+  orb-tools: circleci/orb-tools@9.2.1
+  queue: eddiewebb/queue@1.5.0
+  changelog: onimur/github-changelog-generator@2.1.6
+  mem: circleci/rememborb@0.0.1
+  # add your orb below, to be used in integration tests (note: a
+  # @dev:alpha release must exist; if none exists, you'll need to
+  # publish manually once before this worklow can succeed)
+  tools: onimur/common-tools@<<pipeline.parameters.dev-orb-version>>
+
+# Pipeline parameters
+parameters:
+  # These pipeline parameters are required by the "trigger-integration-tests-workflow"
+  # job, by default.
+  run-integration-tests:
+    type: boolean
+    default: false
+  dev-orb-version:
+    type: string
+    default: "dev:alpha"
+
+commands:
+  export-env-var:
+    steps:
+      - mem/remember:
+          env_var: DATE_FORMAT
+          value: "%d-%m-%y"
+      - mem/remember:
+          env_var: OUTPUT_CHANGELOG
+          value: CHANGELOG.md
+
+jobs:
+  # TESTS HERE
+  integration-persist-1:
+    machine: true
+    steps:
+      - run:
+          name: Create a file.
+          command: |
+            mkdir -p second
+            echo "Hello world!" >> hello.txt
+            echo "Hello world, again!" >> second/hello-again.txt
+      - tools/persist-dir:
+          paths: hello.txt, second
+  integration-attach-1:
+    machine: true
+    steps:
+      - tools/attach-dir
+      - run:
+          name: Checks whether the files were created correctly.
+          command: |
+            find .
+            find /tmp/.persist
+            if grep "Hello world!" "./persist/hello.txt"; then
+              echo "The ./persist/hello.txt contains 'Hello world!'"
+            else
+              echo "The ./persist/hello.txt not contains 'Hello world!'"
+              exit 1
+            fi
+            if grep "Hello world, again!" "./persist/second/hello-again.txt"; then
+              echo "The ./persist/second/hello-again.txt contains 'Hello world, again!'"
+            else
+              echo "The ./persist/second/hello-again.txt not contains 'Hello world, again!'"
+              exit 1
+            fi
+  integration-persist-2:
+    machine: true
+    steps:
+      - run:
+          name: Create a file.
+          command: |
+            # Attempt to overwrite the file I already had in persist to workspace
+            echo "I overwrote hello world" >> hello.txt
+            echo "Hello world!" >> hello2.txt
+      - tools/persist-dir:
+          paths: hello.txt
+      - tools/persist-dir:
+          custom-directory: my-test
+          paths: hello2.txt
+  # Check if files in persist_to_workspace are overwritten.
+  integration-attach-2:
+    machine: true
+    steps:
+      - tools/attach-dir
+      - run:
+          name: Check if files in persist_to_workspace are overwritten.
+          command: |
+            find /tmp/.persist
+            # Check if it was overwritten
+            if grep "I overwrote hello world" "./persist/hello.txt"; then
+              echo "The ./persist/hello.txt was overwritten"
+            else
+              echo "The ./persist/hello.txt it was not overwritten"
+              exit 1
+            fi
+      - tools/attach-dir:
+          destiny: here
+          custom-directory: my-test
+          paths: hello2.txt
+      - run:
+          name: Check files
+          command: |
+            find /tmp/.persist
+            if grep "Hello world!" "./here/hello2.txt"; then
+              echo "The ./here/hello2.txt contains 'Hello world!'"
+            else
+              echo "The ./here/hello2.txt not contains 'Hello world!'"
+              exit 1
+            fi
+    # Checks whether existing files are overwritten by what is in persist_to_workspace.
+  integration-attach-3:
+    machine: true
+    steps:
+      - run: |
+          mkdir -p persist
+          echo "The persist_to_workspace has overwritten me" >> ./persist/hello.txt
+      - tools/attach-dir
+      - run:
+          name: Checks whether an existing file in working_directory is overwritten by persist_to_workspace
+          command: |
+            find /tmp/.persist
+            # Check if it was overwritten
+            if grep "The persist_to_workspace has overwritten me" "./persist/hello.txt"; then
+              echo "The ./persist/hello.txt it was not overwritten"
+              exit 1
+            else
+              echo "The ./persist/hello.txt was overwritten by persist_to_workspace"
+            fi
+            cat "./persist/hello.txt"
+  #publish on github releases
+  publish-github-release:
+    docker:
+      - image: cibuilds/github:0.13
+    steps:
+      - export-env-var
+      - checkout
+      - mem/recall:
+          env_var: DATE_FORMAT
+      - mem/recall:
+          env_var: OUTPUT_CHANGELOG
+      - run:
+          name: Publish Release on GitHub
+          command: |
+            DATE=$(date +${DATE_FORMAT})
+            TAG_WITHOUT_DOT="${CIRCLE_TAG//./}"
+            TITLE="CircleCI Persist Files"
+            URL_CHANGELOG="https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/blob/master/${OUTPUT_CHANGELOG}#${TAG_WITHOUT_DOT}-${DATE}"
+            printf -v BODY "$(<./docs/RELEASE_TEMPLATE.md)" \
+            "${TITLE}" "${DATE}" "${CIRCLE_TAG}" "${CIRCLE_BUILD_NUM}" "${CIRCLE_BUILD_URL}" "${OUTPUT_CHANGELOG}" "${URL_CHANGELOG}"
+            ghr \
+            -t ${GITHUB_TOKEN} \
+            -u ${CIRCLE_PROJECT_USERNAME} \
+            -r ${CIRCLE_PROJECT_REPONAME}  \
+            -b "${BODY}" \
+            -c ${CIRCLE_SHA1}  \
+            -delete ${CIRCLE_TAG}
+
+orb_promotion_filters: &orb_promotion_filters
+  branches:
+    ignore: /.*/
+  tags:
+    only: /^(major|minor|patch)-release-v\d+\.\d+\.\d+$/
+
+workflows:
+  lint_pack-validate_publish-dev:
+    unless: <<pipeline.parameters.run-integration-tests>>
+    jobs:
+      - orb-tools/lint
+
+      - orb-tools/shellcheck:
+          exclude: "SC1009,SC1073,SC1041,SC1042,SC2157"
+
+      - orb-tools/pack:
+          source-dir: src
+          destination-orb-path: orb.yml
+          workspace-path: orb.yml
+          artifact-path: orb.yml
+          requires: [orb-tools/lint]
+
+      - orb-tools/publish-dev:
+          context: main-context
+          orb-name: onimur/common-tools
+          requires: [orb-tools/pack]
+
+      - queue/block_workflow:
+          context: main-context
+          circleci-api-key: CIRCLE_TOKEN
+          requires: [orb-tools/publish-dev]
+
+      - orb-tools/trigger-integration-tests-workflow:
+          name: trigger-integration
+          context: main-context
+          requires: [queue/block_workflow]
+
+  integration_tests-prod_deploy:
+    when: <<pipeline.parameters.run-integration-tests>>
+    jobs:
+      - integration-persist-1
+      - integration-attach-1:
+          requires: [integration-persist-1]
+      - integration-persist-2:
+          requires: [integration-attach-1]
+      - integration-attach-2:
+          requires: [integration-persist-2]
+      - integration-attach-3:
+          requires: [integration-attach-2]
+      # Actually publish the orb
+      # Promote a dev version of an orb to a semantic production release.
+      # It assumes the context of a GitHub pull request, and promotion of the orb to a
+      # new major/minor/patch version is based on information that must be contained in the
+      # subject of the commit that merges the pull request. Namely, the commit subject must
+      # include the `[semver:FOO]` pattern, where FOO is major, minor, patch, or skip (to skip promotion).
+      # e.g. 'Merge pull request #XX from some-branch [semver:minor]'
+      # This job is designed to run at the conclusion of an integration-testing workflow.
+      - orb-tools/dev-promote-prod-from-commit-subject:
+          name: dev-promote-semver
+          add-pr-comment: true
+          fail-if-semver-not-indicated: false
+          bot-user: onimur-bot
+          bot-token-variable: GITHUB_TOKEN
+          context: main-context
+          orb-name: onimur/common-tools
+          publish-version-tag: true
+          requires: [integration-attach-3]
+          filters:
+            branches:
+              only: master
+
+  # Tag-triggered workflow to promote a dev orb into production.
+  #
+  # Uses the CLI to promote a dev version of an orb to the registry.
+  # This command supports Semantic Versioning support.
+  # Whether the new release of the orb will be a patch, minor or major release
+  # is determined based on the information in the commit's git tag which
+  # must match the regex pattern defined in the major-release-tag-regex,
+  # minor-release-tag-regex and patch-release-tag-regex parameters.
+  # Hence this job should be configured with an "only" tag filter suitable
+  # for the above 3 patterns (e.g. /^(major|minor|patch)-release-v\d+\.\d+\.\d+$/
+  # would fit the default patterns) and a branch filter persist to ignore /.*/
+  tag-triggered-orb-publishing:
+    unless: <<pipeline.parameters.run-integration-tests>>
+    jobs:
+      - hold-for-approval:
+          type: approval
+          filters: *orb_promotion_filters
+      - orb-tools/dev-promote-prod-from-git-tag:
+          orb-name: onimur/common-tools
+          context: main-context
+          add-pr-comment: true
+          bot-user: onimur-bot
+          bot-token-variable: GITHUB_TOKEN
+          requires: [hold-for-approval]
+          filters: *orb_promotion_filters
+      - publish-github-release:
+          context: main-context
+          requires: [orb-tools/dev-promote-prod-from-git-tag]
+          filters: *orb_promotion_filters
+      - changelog/changelog-custom:
+          context: main-context
+          steps:
+            - checkout
+            - export-env-var
+            - mem/recall:
+                env_var: DATE_FORMAT
+            - mem/recall:
+                env_var: OUTPUT_CHANGELOG
+          user: CIRCLE_PROJECT_USERNAME
+          project: CIRCLE_PROJECT_REPONAME
+          token: GITHUB_TOKEN
+          date-format: ${DATE_FORMAT}
+          output: ${OUTPUT_CHANGELOG}
+          git-push: true
+          filters: *orb_promotion_filters
+          requires: [publish-github-release]

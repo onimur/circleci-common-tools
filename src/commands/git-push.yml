@@ -1,0 +1,81 @@
+description: |
+  Push the files or d to github
+parameters:
+  user:
+    default: CIRCLE_PROJECT_USERNAME
+    description: |
+      Username of the owner of target GitHub repo.
+    type: env_var_name
+  project:
+    default: CIRCLE_PROJECT_REPONAME
+    description: |
+      Name of project on GitHub.
+    type: env_var_name
+  bot-name:
+    default: circleci-bot
+    description: |
+      User name to commit
+    type: string
+  bot-email:
+    default: circleci@bot-noreply.com
+    description: |
+      Email to commit
+    type: string
+  commit-message:
+    default: Auto Update changelog
+    description: Commit message
+    type: string
+  paths:
+    description: |
+      Output files or directories. If it is more than one then separate it with commas.
+    type: string
+  token:
+    default: GITHUB_TOKEN
+    description: |
+      To make push to github remote
+    type: env_var_name
+  branch:
+    default: master
+    description: |
+      Branch to push changelog
+    type: string
+
+steps:
+  - git-config:
+      bot-email: <<parameters.bot-email>>
+      bot-name: <<parameters.bot-name>>
+  - run:
+      name: Push the <<parameters.output>> to Github
+      command: |
+        foreach_path () {
+          SPLIT_PATHS=","
+          if [[ "<<parameters.paths>>" =~ $SPLIT_PATHS ]] ; then
+            IFS=$SPLIT_PATHS read -ra EACH_PATH \<<< "<<parameters.paths>>"
+            for subpath in "${EACH_PATH[@]}" ; do
+              subpath=`echo $subpath | sed 's/ *$//g'`
+              git add ./$subpath
+            done
+          else
+            parameter_path=`echo "<<parameters.paths>>" | sed 's/ *$//g'`
+            git add ./$parameter_path
+          fi
+        }
+
+        # Check tag
+        if [ -z "${CIRCLE_TAG+x}" ]; then
+          if [[ "$(git show -s --format=%B | head -n 1)" == "<<parameters.commit-message>>  [skip ci]" ]]; then
+              circleci-agent step halt
+          fi
+        fi
+
+        # Add each file or dir
+        if [[ -n "<<parameters.paths>>" ]] ; then
+          foreach_path
+        else
+          echo "Parameters Path cannot be empty"
+          exit 1
+        fi
+
+        git diff-index --quiet HEAD || git commit -m "<<parameters.commit-message>> [skip ci]"
+        # Push quietly to prevent showing the token in log
+        git push -f -q https://$<<parameters.token>>@github.com/$<<parameters.user>>/$<<parameters.project>>.git <<parameters.branch>>

@@ -1,0 +1,77 @@
+description: |
+  Save files or directories.
+parameters:
+  paths:
+    description: |
+      The path to files or directories you want to store.
+    type: string
+  custom-directory:
+    description: |
+      The name of the directory that will be created to store your files or folders.
+    type: string
+    default: persist
+
+steps:
+  - run:
+      name: Save <<parameters.paths>> to /tmp/.persist/<<parameters.custom-directory>>
+      command: |
+        ONIMUR_MAIN_PATH="/tmp/.persist/<<parameters.custom-directory>>"
+
+        check_is_dir() {
+          # Exclude: Shellcheck SC1073/SC1009
+          if [[ -d "$1" ]] ; then
+            echo "$1 is a directory"
+          else
+            # Exclude: Shellcheck SC1041, SC1042
+            if [[ -f "$1" ]] ; then
+              echo "$1 is a file"
+            else
+              echo "$1 is not valid"
+              exit 1
+            fi
+          fi
+        }
+
+        check_exists_subdomains () {
+          SPLIT="/"
+          # Check if contains "/"
+          if [[ "$1" =~ $SPLIT ]] ; then
+            echo "The '$1' contains subdirectories"
+            #Split
+            IFS=$SPLIT read -ra M_PATH \<<< "$1"
+            # Get the last parameter
+            LAST_SEGMENT=${M_PATH[-1]}
+          else
+            LAST_SEGMENT="$1"
+            echo "The '$1' not contains subdirectories"
+          fi
+        }
+
+        copy_files_to () {
+          # find -iname '' -exec cp {} .$PATH_DIR/ \;
+          cp -r "$1" "$ONIMUR_MAIN_PATH"
+          echo "parameters saved: '${ONIMUR_MAIN_PATH}/$LAST_SEGMENT'"
+        }
+
+        SPLIT_PATHS=","
+        mkdir -p "$ONIMUR_MAIN_PATH"
+        # Multiple paths
+        if [[ "<<parameters.paths>>" =~ $SPLIT_PATHS ]]; then
+          IFS=$SPLIT_PATHS read -ra EACH_PATH \<<< "<<parameters.paths>>"
+          for subpath in "${EACH_PATH[@]}" ; do
+            subpath=`echo $subpath | sed 's/ *$//g'`
+            check_is_dir $subpath
+            check_exists_subdomains $subpath
+            copy_files_to $subpath
+          done
+        # Single path
+        else
+          parameter_path=`echo "<<parameters.paths>>" | sed 's/ *$//g'`
+          check_is_dir "$parameter_path"
+          check_exists_subdomains "$parameter_path"
+          copy_files_to "$parameter_path"
+        fi
+  - persist_to_workspace:
+      root: /tmp/.persist
+      paths:
+        - <<parameters.custom-directory>>
