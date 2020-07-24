@@ -56,7 +56,7 @@ If you like this project and would like to help us, make a donation:
 In your config.yml
 
 ### Example with Git Commands
-For these example you can use [these commands](#%EF%B8%8F-commands).
+For these example you can use [these commands](#git).
 
 ```yml
 version: 2.1
@@ -94,7 +94,7 @@ workflows:
 ```
 
 ### Example with Persist and Attach Commands
-For these example you can use [these commands](#%EF%B8%8F-commands).
+For these example you can use [these commands](#persist-attach).
 
 ```yml
 version: 2.1
