@@ -51,11 +51,11 @@ steps:
           if [[ -d "$1" ]] ; then
             # If is folder so all content is add
             echo "All content from directory $1 has been added."
-            git add ./"$1"/*
+            git add -f ./"$1"/*
           else
             if [[ -f "$1" ]] ; then
               echo "The file $1 has been added."
-              git add ./"$1"
+              git add -f ./"$1"
             else
               echo "$1 is not valid"
               exit 1
