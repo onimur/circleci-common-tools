@@ -48,6 +48,7 @@ If you like this project and would like to help us, make a donation:
 - [Commands](#%EF%B8%8F-commands)
   - [Git](#git)
   - [Persist Attach](#persist-attach)
+- [Projects using this library](#-projects-using-this-library)
 - [Main features](#-main-features)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -189,6 +190,12 @@ workflows:
 | paths            | The  path to files or directories you want to restore. If it is empty, any  files or directories that have been persisted will be recovered.                                                                    |     -    | ''      | string |
 
 </details>
+
+## 🚀 Projects using this library
+
+Here's a [wikipage list of projects](https://github.com/onimur/circleci-common-tools/wiki/Projects-using-Circleci-Common-Tools).
+
+If you've used this orb, please let me know! Nothing makes me happier than seeing someone else take my work and go wild with it.
 
 ## 🔍 Main features
 
