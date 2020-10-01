@@ -165,6 +165,7 @@ workflows:
 | commit-message | Commit message                                                                    |     -    | Auto Update changelog    | string       |
 | paths          | Output files or directories. If it is more than one then separate it with commas. |     ✔️    | -                        | string       |
 | project        | Name of project on GitHub.                                                        |     -    | CIRCLE_PROJECT_REPONAME  | env_var_name |
+| push-force     | Force the push.                                                                   |     -    | false                       | boolean |
 | token          | To make push to github remote                                                     |     -    | GITHUB_TOKEN             | env_var_name |
 | user           | Username of the owner of target GitHub repo.                                      |     -    | CIRCLE_PROJECT_USERNAME  | env_var_name |
 
