@@ -25,6 +25,10 @@ parameters:
     default: Auto Update
     description: Commit message
     type: string
+  push-force:
+    default: false
+    description: Force the push
+    type: boolean
   paths:
     description: |
       Output files or directories. If it is more than one then separate it with commas.
@@ -93,5 +97,10 @@ steps:
         fi
 
         git diff-index --quiet HEAD || git commit -m "<<parameters.commit-message>> [skip ci]"
+
         # Push quietly to prevent showing the token in log
-        git push -f -q https://$<<parameters.token>>@github.com/$<<parameters.user>>/$<<parameters.project>>.git <<parameters.branch>>
+        if [[ "<<parameters.push-force>>" = true ]]; then
+          git push -f -q https://$<<parameters.token>>@github.com/$<<parameters.user>>/$<<parameters.project>>.git <<parameters.branch>>
+        else
+          git push -q https://$<<parameters.token>>@github.com/$<<parameters.user>>/$<<parameters.project>>.git <<parameters.branch>>
+        fi
